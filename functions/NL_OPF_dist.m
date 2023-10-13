@@ -541,8 +541,8 @@ function [x, B0Vals_pu_Area, ...
     % macroIterationQLosses(macroItr, Area) = QLoss;
     macroIterationPSaves(macroItr, Area) = percentageSavings;
 
-     if fileOpenedFlag
-        fclose(fid);
-    end
+    %  if fileOpenedFlag
+    %     fclose(fid);
+    % end
 
 end
