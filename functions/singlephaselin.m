@@ -1,5 +1,5 @@
 function x_NoLoss = singlephaselin(busDataTable_pu_Area, branchDataTable_Area, v2_parent_Area, S_connection_Area, B0Vals_Area, isLeaf_Area, ...
-    Area, numAreas, graphDFS_Area_Table, R_Area_Matrix, X_Area_Matrix, timePeriodNum, macroItr, varargin)
+    Area, numAreas, graphDFS_Area_Table, R_Area_Matrix, X_Area_Matrix, t, macroItr, lambdaVals, pvCoeffVals, varargin)
 
  % Default values for optional arguments
     verbose = false;
@@ -85,11 +85,11 @@ function x_NoLoss = singlephaselin(busDataTable_pu_Area, branchDataTable_Area, v
     fileOpenedFlag_Aeq_beq = false;
     fileOpenedFlag = false;
 
-    if macroItr ~= 1 || timePeriodNum ~= 1
+    if macroItr ~= 1 || t ~= 1
         logging_Aeq_beq = false;
     end
 
-    if logging_Aeq_beq && timePeriodNum == 1 && saveToFile && macroItr == 1 && Area == 2
+    if logging_Aeq_beq && t == 1 && saveToFile && macroItr == 1 && Area == 2
         fileOpenedFlag_Aeq_beq = true;
         fid_Aeq_beq = fopen(saveLocationFilename_Aeq_beq, 'w');  % Open file for writing
     else
@@ -99,7 +99,7 @@ function x_NoLoss = singlephaselin(busDataTable_pu_Area, branchDataTable_Area, v
     
     if logging
         fileOpenedFlag = true;
-        if timePeriodNum == 1
+        if t == 1
             fid = fopen(saveLocationFilename, 'w');
         else
             fid = fopen(saveLocationFilename, 'a');
@@ -112,7 +112,7 @@ function x_NoLoss = singlephaselin(busDataTable_pu_Area, branchDataTable_Area, v
         error("Kindly specify ONLY one of the following arguments as true: verbose and logging.")
     elseif logging && ~verbose
         fileOpenedFlag = true;
-        if timePeriodNum == 1
+        if t == 1
             fid = fopen(saveLocationFilename, 'w');
         else
             fid = fopen(saveLocationFilename, 'a');
@@ -225,11 +225,11 @@ function x_NoLoss = singlephaselin(busDataTable_pu_Area, branchDataTable_Area, v
 
         PIdx = parentBusIdx;
         Aeq_NoLoss( PIdx, indices_P_noLoss(parentBusIdx) ) = 1;
-        Aeq_NoLoss( PIdx, indices_v_noLoss(parentBusIdx) ) = -0.5 * CVR_P * P_L_Area( currentBusNum );
+        Aeq_NoLoss( PIdx, indices_v_noLoss(parentBusIdx) ) = -0.5 * CVR_P * lambdaVals(t) * P_L_Area( currentBusNum );
         
         QIdx = PIdx + m_Area;
         Aeq_NoLoss( QIdx, indices_Q_noLoss(parentBusIdx) ) = 1;
-        Aeq_NoLoss( QIdx, indices_v_noLoss(parentBusIdx) ) = -0.5 * CVR_Q * Q_L_Area( currentBusNum );
+        Aeq_NoLoss( QIdx, indices_v_noLoss(parentBusIdx) ) = -0.5 * CVR_Q * lambdaVals(t) * Q_L_Area( currentBusNum );
         
         % List of Row Indices showing the set of 'children' buses 'under' our currentBus:
         childBusIndices = find(fb_Area == currentBusNum);
@@ -279,12 +279,12 @@ function x_NoLoss = singlephaselin(busDataTable_pu_Area, branchDataTable_Area, v
         
         beq_NoLoss(PIdx) = ...
             ( 1- 0.5 * CVR_P ) * ...
-            ( P_L_Area( currentBusNum ) - P_der_Area( currentBusNum ) );
+            ( lambdaVals(t) * P_L_Area( currentBusNum ) - pvCoeffVals(t) * P_der_Area( currentBusNum ) );
         myfprintf(logging_Aeq_beq, fid_Aeq_beq, "beq(%d) = (1 - 0.5*CVR_P)*(P_L(%d) - P_der(%d))\n", PIdx, currentBusNum, currentBusNum);
     
         beq_NoLoss(QIdx) =  ...
             ( 1- 0.5*CVR_Q ) * ...
-            ( Q_L_Area( currentBusNum ) - Q_C_Area( currentBusNum ) );
+            ( lambdaVals(t) * Q_L_Area( currentBusNum ) - Q_C_Area( currentBusNum ) );
         myfprintf(logging_Aeq_beq, fid_Aeq_beq, "beq(%d) = (1 - 0.5*CVR_Q)*(Q_L(%d) - Q_C(%d))\n", QIdx, currentBusNum, currentBusNum);
         
     end
@@ -382,11 +382,11 @@ function x_NoLoss = singlephaselin(busDataTable_pu_Area, branchDataTable_Area, v
 
     options = optimoptions('intlinprog','Display','off');
     
-    myfprintf(logging, fid, "Time Period = %d, macroItr = %d and Area = %d: Performing Initialization Phase 1.\n", timePeriodNum, macroItr, Area);
+    myfprintf(logging, fid, "Time Period = %d, macroItr = %d and Area = %d: Performing Initialization Phase 1.\n", t, macroItr, Area);
     [xBFM_DER_NoLoss, ~, ~, ~] = intlinprog(fBFM, [], [], [], AeqBFM_NoLoss, beqBFM_NoLoss, lbBFM_DER_NoLoss, ubBFM_DER_NoLoss, options);
     
     if ~isempty(xBFM_DER_NoLoss)
-        myfprintf(logging, fid, "Time Period = %d, macroItr = %d and Area = %d: Lossless Initialization WITHOUT batteries accomplished.\n", timePeriodNum, macroItr, Area);
+        myfprintf(logging, fid, "Time Period = %d, macroItr = %d and Area = %d: Lossless Initialization WITHOUT batteries accomplished.\n", t, macroItr, Area);
     end
     
     P0_BFM_DER_NoLoss = xBFM_DER_NoLoss(indices_P_noLoss);
@@ -406,11 +406,11 @@ function x_NoLoss = singlephaselin(busDataTable_pu_Area, branchDataTable_Area, v
         ubVal = ub_NoLoss(varNum);
         x0Val = x0_NoLoss(varNum);
         if lb_NoLoss(varNum) > x0_NoLoss(varNum)
-            myfprintf(logging, fid, "Time Period = %d, macroItr = %d and Area = %d:  Oh no! x0_NoLoss(%d) < lb(%d) as %f < %f.\n", timePeriodNum, macroItr, Area, varNum, varNum, x0Val, lbVal);
+            myfprintf(logging, fid, "Time Period = %d, macroItr = %d and Area = %d:  Oh no! x0_NoLoss(%d) < lb(%d) as %f < %f.\n", t, macroItr, Area, varNum, varNum, x0Val, lbVal);
             flaggedForLimitViolation = true;
         end
         if ub_NoLoss(varNum) < x0_NoLoss(varNum)
-            myfprintf(logging, fid, "Time Period = %d, macroItr = %d and Area = %d:  Oh no! x0_NoLoss(%d) > ub(%d) as %f > %f.\n", timePeriodNum, macroItr, Area, varNum, varNum, x0Val, ubVal);
+            myfprintf(logging, fid, "Time Period = %d, macroItr = %d and Area = %d:  Oh no! x0_NoLoss(%d) > ub(%d) as %f > %f.\n", t, macroItr, Area, varNum, varNum, x0Val, ubVal);
             flaggedForLimitViolation = true;
         end
     end
@@ -419,23 +419,23 @@ function x_NoLoss = singlephaselin(busDataTable_pu_Area, branchDataTable_Area, v
         myfprintf("My native bound checker says that bounds are being violated.\n");
         error("Nani?");
     elseif flaggedForLimitViolation
-        myfprintf(logging, fid, "Time Period = %d, macroItr = %d and Area = %d: x0_NoLoss within limits anyway? More like MATLAB stupid? Phase 1 of Initialization successful. Proceeding to Phase 2 of Initialization.\n", timePeriodNum, macroItr, Area)
+        myfprintf(logging, fid, "Time Period = %d, macroItr = %d and Area = %d: x0_NoLoss within limits anyway? More like MATLAB stupid? Phase 1 of Initialization successful. Proceeding to Phase 2 of Initialization.\n", t, macroItr, Area)
     else
-        myfprintf(logging, fid, "Time Period = %d, macroItr = %d and Area = %d: x0_NoLoss within limits. Phase 1 of Initialization successful. Proceeding to Phase 2 of Initialization.\n", timePeriodNum, macroItr, Area);
+        myfprintf(logging, fid, "Time Period = %d, macroItr = %d and Area = %d: x0_NoLoss within limits. Phase 1 of Initialization successful. Proceeding to Phase 2 of Initialization.\n", t, macroItr, Area);
     end
 
     options = optimoptions('fmincon', 'Display', 'off', 'MaxFunctionEvaluations', 100000000, 'Algorithm', 'sqp');
     
-    myfprintf(logging, fid, "Time Period = %d, macroItr = %d and Area = %d: Performing Initialization Phase 2\n", timePeriodNum, macroItr, Area);
+    myfprintf(logging, fid, "Time Period = %d, macroItr = %d and Area = %d: Performing Initialization Phase 2\n", t, macroItr, Area);
 
     [x_NoLoss, ~, ~, ~] = ...
         fmincon(@(x)objfun(x, N_Area, nDER_Area, nBatt_Area, fb_Area, tb_Area, R_Area_Matrix, X_Area_Matrix, 'mainObjFun', "func_PLoss-fake", 'secondObjFun', "none", 'indices_Pd', indices_Pd_noLoss, 'indices_Pc', indices_Pc_noLoss, 'voltageVals', x0_NoLoss(indices_vFull_noLoss)), ...
         x0_NoLoss, [], [], Aeq_NoLoss, beq_NoLoss, lb_NoLoss, ub_NoLoss, [], options);
     
     if ~isempty(x_NoLoss)
-        myfprintf(logging, fid, "Time Period = %d, macroItr = %d and Area = %d: Lossless Initialization WITH batteries accomplished.\n", timePeriodNum, macroItr, Area);
+        myfprintf(logging, fid, "Time Period = %d, macroItr = %d and Area = %d: Lossless Initialization WITH batteries accomplished.\n", t, macroItr, Area);
     else
-        error("Time Period = %d, macroItr = %d and Area = %d: Lossless Initialization WITH batteries failed.\n", timePeriodNum, macroItr, Area);
+        error("Time Period = %d, macroItr = %d and Area = %d: Lossless Initialization WITH batteries failed.\n", t, macroItr, Area);
     end
 
     if fileOpenedFlag

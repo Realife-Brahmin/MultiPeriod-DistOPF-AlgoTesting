@@ -6,7 +6,7 @@ function [x, B0Vals_pu_Area, ...
     NL_OPF_dist(v_parent_Area, S_connection_Area, B0Vals_pu_Area, ...
     Area, isLeaf_Area, isRoot_Area, numChildAreas_Area, numAreas, ...
     macroIterationPLosses, macroIterationQLosses, macroIterationPSaves, ...
-    time_dist, timePeriodNum, macroItr, ...
+    lambdaVals, pvCoeffVals, time_dist, t, macroItr, ...
     CB_FullTable, varargin)
     
  % Default values for optional arguments
@@ -109,7 +109,7 @@ function [x, B0Vals_pu_Area, ...
         error("Kindly specify ONLY one of the following arguments as true: verbose and logging.")
     elseif logging && ~verbose
         fileOpenedFlag = true;
-        if timePeriodNum == 1
+        if t == 1
             fid = fopen(saveLocationFilename, 'w');
         else
             fid = fopen(saveLocationFilename, 'a');
@@ -120,7 +120,7 @@ function [x, B0Vals_pu_Area, ...
     end
 
     [busDataTable_pu_Area, branchDataTable_Area, edgeMatrix_Area, R_Area, X_Area] ...
-        = extractAreaElectricalParameters(Area, timePeriodNum, macroItr, isRoot_Area, systemName, numAreas, CB_FullTable, numChildAreas_Area, 'verbose', verbose, 'logging', logging, 'displayNetworkGraphs', false);
+        = extractAreaElectricalParameters(Area, t, macroItr, isRoot_Area, systemName, numAreas, CB_FullTable, numChildAreas_Area, 'verbose', verbose, 'logging', logging, 'displayNetworkGraphs', false);
     
     N_Area = length(busDataTable_pu_Area.bus);
     m_Area = length(branchDataTable_Area.fb);
@@ -183,7 +183,7 @@ function [x, B0Vals_pu_Area, ...
     lb_qB_onlyBattBuses_Area = -sqrt( S_onlyBattBusesMax_Area.^2 - P_onlyBattBusesMax_Area.^2);
     ub_qB_onlyBattBuses_Area = sqrt( S_onlyBattBusesMax_Area.^2 - P_onlyBattBusesMax_Area.^2);
     
-    if timePeriodNum == 1
+    if t == 1
         myfprintf(logging, fid, "First Time Period, will initialize Battery SOCs for Area %d at the middle of the permissible bandwidth.\n", Area);
         B0Vals_pu_Area = mean([lb_B_onlyBattBuses_Area, ub_B_onlyBattBuses_Area], 2);
     end
@@ -251,14 +251,14 @@ function [x, B0Vals_pu_Area, ...
         PIdx = parentBusIdx;
         Aeq_Full( PIdx, indices_P(parentBusIdx) ) = 1;
         Aeq_Full( PIdx, indices_l(parentBusIdx) ) = -R_Area_Matrix( parentBusNum, currentBusNum );
-        Aeq_Full( PIdx, indices_v(parentBusIdx) ) = -0.5 * CVR_P * P_L_Area( currentBusNum );
+        Aeq_Full( PIdx, indices_v(parentBusIdx) ) = -0.5 * CVR_P * lambdaVals(t) * P_L_Area( currentBusNum );
 
         
         %Q equations
         QIdx = PIdx + m_Area;
         Aeq_Full( QIdx, indices_Q(parentBusIdx) ) = 1;
         Aeq_Full( QIdx, indices_l(parentBusIdx) ) = -X_Area_Matrix( parentBusNum, currentBusNum );
-        Aeq_Full( QIdx, indices_v(parentBusIdx) ) = -0.5 * CVR_Q * Q_L_Area( currentBusNum );
+        Aeq_Full( QIdx, indices_v(parentBusIdx) ) = -0.5 * CVR_Q * lambdaVals(t) * Q_L_Area( currentBusNum );
 
         
        % List of Row Indices showing the set of 'children' buses 'under' our currentBus:
@@ -317,12 +317,12 @@ function [x, B0Vals_pu_Area, ...
 
         beq_Full(PIdx) = ...
             ( 1- 0.5 * CVR_P ) * ...
-            ( P_L_Area( currentBusNum ) - P_der_Area( currentBusNum ) );
+            ( lambdaVals(t) * P_L_Area( currentBusNum ) - P_der_Area( currentBusNum )*pvCoeffVals(t) );
         myfprintf(logging_Aeq_beq, fid_Aeq_beq, "beq(%d) = (1 - 0.5*CVR_P)*(P_L(%d) - P_der(%d))\n", PIdx, currentBusNum, currentBusNum);
     
         beq_Full(QIdx) =  ...
             ( 1- 0.5*CVR_Q ) * ...
-            ( Q_L_Area( currentBusNum ) - Q_C_Area( currentBusNum ) );
+            ( lambdaVals(t) * Q_L_Area( currentBusNum ) - Q_C_Area( currentBusNum ) );
         myfprintf(logging_Aeq_beq, fid_Aeq_beq, "beq(%d) = (1 - 0.5*CVR_Q)*(Q_L(%d) - Q_C(%d))\n", QIdx, currentBusNum, currentBusNum);
 
     end
@@ -394,7 +394,7 @@ function [x, B0Vals_pu_Area, ...
     end
     
     x_NoLoss = singlephaselin(busDataTable_pu_Area, branchDataTable_Area, v_parent_Area, S_connection_Area, B0Vals_pu_Area, isLeaf_Area, ...
-        Area, numAreas, graphDFS_Area_Table, R_Area_Matrix, X_Area_Matrix, timePeriodNum, macroItr, 'verbose', false, 'logging', true);
+        Area, numAreas, graphDFS_Area_Table, R_Area_Matrix, X_Area_Matrix, t, macroItr, lambdaVals, pvCoeffVals, 'verbose', false, 'logging', true);
 
 
     numVarsNoLoss = [m_Area, m_Area, N_Area, nDER_Area, nBatt_Area, nBatt_Area, nBatt_Area, nBatt_Area];
@@ -446,25 +446,25 @@ function [x, B0Vals_pu_Area, ...
         ubVal = ub_AreaFull(varNum);
         x0Val = x0(varNum);
         if lbVal > x0Val
-            myfprintf(logging, fid, "Time Period = %d, macroItr = %d and Area = %d: Oh no! x0(%d) < lb(%d) as %f < %f.\n", timePeriodNum, macroItr, Area, varNum, varNum, x0Val, lbVal);
+            myfprintf(logging, fid, "Time Period = %d, macroItr = %d and Area = %d: Oh no! x0(%d) < lb(%d) as %f < %f.\n", t, macroItr, Area, varNum, varNum, x0Val, lbVal);
             flaggedForLimitViolation = true;
         end
         if ubVal < x0Val
-            myfprintf(logging, fid, "Time Period = %d, macroItr = %d and Area = %d: Oh no! x0_NoLoss(%d) > ub(%d) as %f > %f.\n", timePeriodNum, macroItr, Area, varNum, varNum, x0Val, ubVal);
+            myfprintf(logging, fid, "Time Period = %d, macroItr = %d and Area = %d: Oh no! x0_NoLoss(%d) > ub(%d) as %f > %f.\n", t, macroItr, Area, varNum, varNum, x0Val, ubVal);
             flaggedForLimitViolation = true;
         end
     end
     
     if checkOptimalSolutionWithinBounds(x0, lb_AreaFull, ub_AreaFull)
-        myfprintf(logging, fid, "Time Period = %d, macroItr = %d and Area = %d:  My native bound checker says that bounds are Actually being violated.\n", timePeriodNum, macroItr, Area);
+        myfprintf(logging, fid, "Time Period = %d, macroItr = %d and Area = %d:  My native bound checker says that bounds are Actually being violated.\n", t, macroItr, Area);
         error("Nani?");
     elseif flaggedForLimitViolation
-        myfprintf(logging, fid, "Time Period = %d, macroItr = %d and Area = %d:  x0 within limits anyway? More like MATLAB stupid? Initialization successful. Proceeding to solving for full optimization problem.\n", timePeriodNum, macroItr, Area)
+        myfprintf(logging, fid, "Time Period = %d, macroItr = %d and Area = %d:  x0 within limits anyway? More like MATLAB stupid? Initialization successful. Proceeding to solving for full optimization problem.\n", t, macroItr, Area)
     else
-        myfprintf(logging, fid, "Time Period = %d, macroItr = %d and Area = %d:  x0 within limits. Initialization successful. Proceeding to solving for the full optimization problem.\n", timePeriodNum, macroItr, Area);
+        myfprintf(logging, fid, "Time Period = %d, macroItr = %d and Area = %d:  x0 within limits. Initialization successful. Proceeding to solving for the full optimization problem.\n", t, macroItr, Area);
     end
 
-    myfprintf(logging, fid, "Time Period = %d, macroItr = %d and Area = %d:  Now solving for the real deal.\n", timePeriodNum, macroItr, Area);
+    myfprintf(logging, fid, "Time Period = %d, macroItr = %d and Area = %d:  Now solving for the real deal.\n", t, macroItr, Area);
 
     [x, fval, ~, ~] = fmincon( @(x)objfun(x, N_Area, nDER_Area, nBatt_Area, fb_Area, tb_Area, R_Area_Matrix, X_Area_Matrix, 'mainObjFun', "func_PLoss", 'secondObjFun', "func_SCD"), ...
                               x0, [], [], Aeq_Full, beq_Full, lb_AreaFull, ub_AreaFull, ...
@@ -475,7 +475,7 @@ function [x, B0Vals_pu_Area, ...
     
     % macroIterationPLoss = fval;
     macroIterationQLoss = objfun(x, N_Area, nDER_Area, nBatt_Area, fb_Area, tb_Area, R_Area_Matrix, X_Area_Matrix, 'mainObjFun', "func_QLoss", 'secondObjFun', "none");
-    % if timePeriodNum == 1 && macroItr == 1 && Area == 4
+    % if t == 1 && macroItr == 1 && Area == 4
     %     display(x(indices_l));
     %     X_Area = reshape(X_Area_Matrix, [], 1);
     %     display(X_Area(1:m_Area));
@@ -517,10 +517,10 @@ function [x, B0Vals_pu_Area, ...
     end
     
     P_inFlowArea = P_Area(1);
-    P_der_Total = sum(P_der_Area);
+    P_der_Total = sum(P_der_Area)*pvCoeffVals(t);
     Pd_Total = sum(Pd_Area);
     Pc_Total = sum(Pc_Area);
-    PLoad_Total = sum(P_L_Area);
+    PLoad_Total = lambdaVals(t) * sum(P_L_Area);
 
     PLoss = P_inFlowArea + P_der_Total + Pd_Total - PLoad_Total - Pc_Total;
     percentageSavings = 100* (Pd_Total - Pc_Total) / (P_inFlowArea + P_der_Total + Pd_Total - Pc_Total);
@@ -528,13 +528,13 @@ function [x, B0Vals_pu_Area, ...
     Q_inFlowArea = Q_Area(1);
     qD_Total = sum(qD_Area);
     qB_Total = sum(qB_Area);
-    QLoad_Total = sum(Q_L_Area);
+    QLoad_Total = lambdaVals(t) * sum(Q_L_Area);
 
     QLoss = Q_inFlowArea + qD_Total + qB_Total - QLoad_Total;
 
     myfprintf(logging, fid, "Time Period = %d, macroItr = %d and Area = %d: " + ...
         "Projected savings in substation power flow by using batteries: " + ...
-        "%f percent.\n", timePeriodNum, macroItr, Area, percentageSavings); % always true
+        "%f percent.\n", t, macroItr, Area, percentageSavings); % always true
 
     macroIterationPLosses(macroItr, Area) = PLoss;
     macroIterationQLosses(macroItr, Area) = macroIterationQLoss;
