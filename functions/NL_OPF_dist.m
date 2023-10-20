@@ -434,8 +434,9 @@ function [x, B0Vals_pu_Area, ...
     [lb_Area, ub_Area] = constructBoundVectors(numVarsForBoundsFull, lbVals, ubVals);
     lb_AreaFull = [lb_Area; lb_qD_onlyDERbuses_Area; lb_B_onlyBattBuses_Area; lb_Pc_onlyBattBuses_Area; lb_Pd_onlyBattBuses_Area; lb_qB_onlyBattBuses_Area];
     ub_AreaFull = [ub_Area; ub_qD_onlyDERbuses_Area; ub_B_onlyBattBuses_Area; ub_Pc_onlyBattBuses_Area; ub_Pd_onlyBattBuses_Area; ub_qB_onlyBattBuses_Area];
-
-    options = optimoptions('fmincon', 'Display', 'off', 'MaxFunctionEvaluations', 100000000, 'Algorithm', 'sqp');
+    
+    printIterations = "iter-detailed";
+    options = optimoptions('fmincon', 'Display', printIterations, 'MaxFunctionEvaluations', 100000000, 'Algorithm', 'sqp');
     
     t3Start = tic;
     
