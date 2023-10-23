@@ -393,6 +393,8 @@ function [x, B0Vals_pu_Area, ...
         fclose(fid_Aeq_beq);
     end
     
+    plotSparsity(Aeq_Full, beq_Full);
+    
     x_NoLoss = singlephaselin(busDataTable_pu_Area, branchDataTable_Area, v_parent_Area, S_connection_Area, B0Vals_pu_Area, isLeaf_Area, ...
         Area, numAreas, graphDFS_Area_Table, R_Area_Matrix, X_Area_Matrix, t, macroItr, lambdaVals, pvCoeffVals, 'verbose', false, 'logging', true);
 
