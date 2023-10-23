@@ -2,8 +2,8 @@ function f = objfun(x, N_Area, nDER_Area, nBatt_Area, fb_Area, tb_Area, R_Area_M
     
  % Default values for optional arguments
     verbose = false;
-    etta_C = 0.80;
-    etta_D = 0.80;
+    etta_C = 0.95;
+    etta_D = 0.95;
     % alpha = 0.5;
     % alpha = 3e-5;
     alpha = 1e-3;
