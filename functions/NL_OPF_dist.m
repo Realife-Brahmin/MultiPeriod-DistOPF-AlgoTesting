@@ -7,7 +7,7 @@ function [x, B0Vals_pu_Area, ...
     Area, isLeaf_Area, isRoot_Area, numChildAreas_Area, numAreas, ...
     macroIterationPLosses, macroIterationQLosses, macroIterationPSaves, ...
     lambdaVals, pvCoeffVals, time_dist, t, macroItr, ...
-    CB_FullTable, varargin)
+    CB_FullTable, T, varargin)
     
  % Default values for optional arguments
     verbose = false;
@@ -392,9 +392,22 @@ function [x, B0Vals_pu_Area, ...
     if fileOpenedFlag_Aeq_beq
         fclose(fid_Aeq_beq);
     end
-    
+
     plotSparsity(Aeq_Full, beq_Full);
-    
+    ext = ".csv";
+    saveLocationFolderName = strcat("processedData", filesep , systemName, filesep, "numAreas_", num2str(numAreas), filesep, "Area", num2str(Area));
+    if ~exist("saveLocationFolderName", 'dir')
+        mkdir(saveLocationFolderName)
+    end
+    filenameAeq = strcat(saveLocationFolderName, filesep, "Aeq_A_T_", num2str(T), "_macroItr_", num2str(macroItr), ext);
+    % Saving Aeq to a CSV file
+    writematrix(Aeq_Full, filenameAeq);
+    filenamebeq = strcat(saveLocationFolderName, filesep, "beq_A_T_", num2str(T), "_macroItr_", num2str(macroItr), ext);
+
+    % Saving beq to a CSV file
+    writematrix(beq_Full, filenamebeq);
+
+
     x_NoLoss = singlephaselin(busDataTable_pu_Area, branchDataTable_Area, v_parent_Area, S_connection_Area, B0Vals_pu_Area, isLeaf_Area, ...
         Area, numAreas, graphDFS_Area_Table, R_Area_Matrix, X_Area_Matrix, t, macroItr, lambdaVals, pvCoeffVals, 'verbose', false, 'logging', true);
 
@@ -478,12 +491,6 @@ function [x, B0Vals_pu_Area, ...
     
     % macroIterationPLoss = fval;
     macroIterationQLoss = objfun(x, N_Area, nDER_Area, nBatt_Area, fb_Area, tb_Area, R_Area_Matrix, X_Area_Matrix, 'mainObjFun', "func_QLoss", 'secondObjFun', "none");
-    % if t == 1 && macroItr == 1 && Area == 4
-    %     display(x(indices_l));
-    %     X_Area = reshape(X_Area_Matrix, [], 1);
-    %     display(X_Area(1:m_Area));
-    %     display(macroIterationQLoss);
-    % end
 
     t3 = toc(t3Start);
     
