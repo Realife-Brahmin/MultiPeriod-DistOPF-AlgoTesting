@@ -378,15 +378,27 @@ function [x, B0Vals_pu_Area, ...
         Aeq_Full(QEqnIdx, qB_Idx) = 1;
         myfprintf(logging_Aeq_beq, fid_Aeq_beq, "Aeq(%d, qB(%d)) = 1\n", QEqnIdx, i);
         
-        Aeq_Full(BEqnIdx, B_Idx) = 1;
-        myfprintf(logging_Aeq_beq, fid_Aeq_beq, "Aeq(%d, B(%d)) = 1\n", BEqnIdx, i);
-        Aeq_Full(BEqnIdx, Pc_Idx) = -delta_t*etta_C;
-        myfprintf(logging_Aeq_beq, fid_Aeq_beq, "Aeq(%d, Pc(%d)) = -delta_t*etta_C\n", BEqnIdx, i);
-        Aeq_Full(BEqnIdx, Pd_Idx) = delta_t/etta_D;
-        myfprintf(logging_Aeq_beq, fid_Aeq_beq, "Aeq(%d, Pd(%d)) = delta_t*etta_D\n", BEqnIdx, i);
+        % Aeq_Full(BEqnIdx, B_Idx) = 1;
+        Aeq_Full(BEqnIdx, B_Idx) = -1;
+        % myfprintf(logging_Aeq_beq, fid_Aeq_beq, "Aeq(%d, B(%d)) = 1\n", BEqnIdx, i);
+        myfprintf(logging_Aeq_beq, fid_Aeq_beq, "Aeq(%d, B(%d)) = -1\n", BEqnIdx, i);
 
-        beq_Full(BEqnIdx) = B0Vals_pu_Area(i);
-        myfprintf(logging_Aeq_beq, fid_Aeq_beq, "beq(%d) = B0(%d) = %f\n", BEqnIdx, i, B0Vals_pu_Area(i));
+        % Aeq_Full(BEqnIdx, Pc_Idx) = -delta_t*etta_C;
+        Aeq_Full(BEqnIdx, Pc_Idx) = delta_t*etta_C;
+        % % myfprintf(logging_Aeq_beq, fid_Aeq_beq, "Aeq(%d, Pc(%d)) = -delta_t*etta_C\n", BEqnIdx, i);
+        myfprintf(logging_Aeq_beq, fid_Aeq_beq, "Aeq(%d, Pc(%d)) = delta_t*etta_C\n", BEqnIdx, i);
+
+        % Aeq_Full(BEqnIdx, Pd_Idx) = delta_t/etta_D;
+        Aeq_Full(BEqnIdx, Pd_Idx) = -delta_t/etta_D;
+        % myfprintf(logging_Aeq_beq, fid_Aeq_beq, "Aeq(%d, Pd(%d)) = delta_t*etta_D\n", BEqnIdx, i);
+        myfprintf(logging_Aeq_beq, fid_Aeq_beq, "Aeq(%d, Pd(%d)) = -delta_t*etta_D\n", BEqnIdx, i);
+
+
+        % beq_Full(BEqnIdx) = B0Vals_pu_Area(i);
+        beq_Full(BEqnIdx) = -B0Vals_pu_Area(i);
+        % myfprintf(logging_Aeq_beq, fid_Aeq_beq, "beq(%d) = B0(%d) = %f\n", BEqnIdx, i, B0Vals_pu_Area(i));
+        myfprintf(logging_Aeq_beq, fid_Aeq_beq, "beq(%d) = B0(%d) = %f\n", BEqnIdx, i, beq_Full(BEqnIdx));
+
     end
 
     if fileOpenedFlag_Aeq_beq
