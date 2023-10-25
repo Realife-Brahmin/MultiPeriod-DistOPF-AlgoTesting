@@ -289,9 +289,10 @@ function [x, B0Vals_pu_Area, ...
 
         % V equations
         vIdx = QIdx + m_Area;
-        Aeq_Full( vIdx, indices_v(parentBusIdx) ) = 1;
-        myfprintf(logging_Aeq_beq, fid_Aeq_beq, "Aeq(%d, v(%d)) = 1\n", vIdx, parentBusIdx);
-
+        % Aeq_Full( vIdx, indices_v(parentBusIdx) ) = 1;
+        % myfprintf(logging_Aeq_beq, fid_Aeq_beq, "Aeq(%d, v(%d)) = 1\n", vIdx, parentBusIdx);
+        Aeq_Full( vIdx, indices_v(parentBusIdx) ) = -1;
+        myfprintf(logging_Aeq_beq, fid_Aeq_beq, "Aeq(%d, v(%d)) = -1\n", vIdx, parentBusIdx);
         %Return the rows with the list of 'children' buses of 'under' the PARENT of our currentBus:
         %our currentBus will obviously also be included in the list.
         siblingBusesIndices = find(fb_Area == parentBusNum);
@@ -303,16 +304,31 @@ function [x, B0Vals_pu_Area, ...
         eldestSiblingIdx = siblingBusesIndices(1);
         eldestSiblingBus = siblingBuses(1);
         myfprintf(logging_Aeq_beq, fid_Aeq_beq,  "which makes bus %d at index %d as the eldest sibling.\n", eldestSiblingBus, eldestSiblingIdx);
-        Aeq_Full( vIdx, indices_vAll( eldestSiblingIdx ) ) = -1;
-        myfprintf(logging_Aeq_beq, fid_Aeq_beq, "Aeq(%d, v_Full(%d)) = -1\n", vIdx, eldestSiblingIdx);
-        Aeq_Full( vIdx, indices_P(parentBusIdx) ) = 2 * R_Area_Matrix( parentBusNum, currentBusNum );
-        myfprintf(logging_Aeq_beq, fid_Aeq_beq, "Aeq(%d, P(%d)) = 2*r(%d, %d).\n", vIdx, parentBusIdx, parentBusNum, currentBusNum);
-        Aeq_Full( vIdx, indices_Q(parentBusIdx) ) = 2 * X_Area_Matrix( parentBusNum, currentBusNum );
-        myfprintf(logging_Aeq_beq, fid_Aeq_beq, "Aeq(%d, Q(%d)) = 2*x(%d, %d).\n", vIdx, parentBusIdx, parentBusNum, currentBusNum);
+        % Aeq_Full( vIdx, indices_vAll( eldestSiblingIdx ) ) = -1;
+        % myfprintf(logging_Aeq_beq, fid_Aeq_beq, "Aeq(%d, v_Full(%d)) = -1\n", vIdx, eldestSiblingIdx);
+        Aeq_Full( vIdx, indices_vAll( eldestSiblingIdx ) ) = 1;
+        myfprintf(logging_Aeq_beq, fid_Aeq_beq, "Aeq(%d, v_Full(%d)) = 1\n", vIdx, eldestSiblingIdx);
+        % Aeq_Full( vIdx, indices_P(parentBusIdx) ) = 2 * R_Area_Matrix( parentBusNum, currentBusNum );
+        Aeq_Full( vIdx, indices_P(parentBusIdx) ) = - 2 * R_Area_Matrix( parentBusNum, currentBusNum );
+
+        % myfprintf(logging_Aeq_beq, fid_Aeq_beq, "Aeq(%d, P(%d)) = 2*r(%d, %d).\n", vIdx, parentBusIdx, parentBusNum, currentBusNum);
+        myfprintf(logging_Aeq_beq, fid_Aeq_beq, "Aeq(%d, P(%d)) = -2*r(%d, %d).\n", vIdx, parentBusIdx, parentBusNum, currentBusNum);
+
+        % Aeq_Full( vIdx, indices_Q(parentBusIdx) ) = 2 * X_Area_Matrix( parentBusNum, currentBusNum );
+        Aeq_Full( vIdx, indices_Q(parentBusIdx) ) = - 2 * X_Area_Matrix( parentBusNum, currentBusNum );
+
+        % myfprintf(logging_Aeq_beq, fid_Aeq_beq, "Aeq(%d, Q(%d)) = 2*x(%d, %d).\n", vIdx, parentBusIdx, parentBusNum, currentBusNum);
+        myfprintf(logging_Aeq_beq, fid_Aeq_beq, "Aeq(%d, Q(%d)) = -2*x(%d, %d).\n", vIdx, parentBusIdx, parentBusNum, currentBusNum);
+
+        % Aeq_Full( vIdx, indices_l(parentBusIdx) ) = ...
+        %     -R_Area_Matrix( parentBusNum, currentBusNum )^2 + ...
+        %     -X_Area_Matrix( parentBusNum, currentBusNum )^2 ;
         Aeq_Full( vIdx, indices_l(parentBusIdx) ) = ...
-            -R_Area_Matrix( parentBusNum, currentBusNum )^2 + ...
-            -X_Area_Matrix( parentBusNum, currentBusNum )^2 ;
-        myfprintf(logging_Aeq_beq, fid_Aeq_beq, "Aeq(%d, l(%d)) = -r(%d, %d)^2 -x(%d, %d)^2.\n", vIdx, parentBusIdx, parentBusNum, currentBusNum, parentBusNum, currentBusNum);
+            R_Area_Matrix( parentBusNum, currentBusNum )^2 + ...
+            +X_Area_Matrix( parentBusNum, currentBusNum )^2 ;
+        myfprintf(logging_Aeq_beq, fid_Aeq_beq, "Aeq(%d, l(%d)) = r(%d, %d)^2 + x(%d, %d)^2.\n", vIdx, parentBusIdx, parentBusNum, currentBusNum, parentBusNum, currentBusNum);
+
+        % myfprintf(logging_Aeq_beq, fid_Aeq_beq, "Aeq(%d, l(%d)) = -r(%d, %d)^2 -x(%d, %d)^2.\n", vIdx, parentBusIdx, parentBusNum, currentBusNum, parentBusNum, currentBusNum);
         
 
         beq_Full(PIdx) = ...
