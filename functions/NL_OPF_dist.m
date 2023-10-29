@@ -421,7 +421,7 @@ function [x, B0Vals_pu_Area, ...
         fclose(fid_Aeq_beq);
     end
 
-    plotSparsity(Aeq_Full, beq_Full);
+    % plotSparsity(Aeq_Full, beq_Full);
     ext = ".csv";
     saveLocationFolderName = strcat("processedData", filesep , systemName, filesep, "numAreas_", num2str(numAreas), filesep, "Area", num2str(Area));
     if ~exist("saveLocationFolderName", 'dir')

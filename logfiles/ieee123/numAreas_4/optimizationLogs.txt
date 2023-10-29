@@ -1,10 +1,5 @@
-Time Period = 1, macroItr = 6 and Area = 4: Performing Initialization Phase 1.
-Time Period = 1, macroItr = 6 and Area = 4: Lossless Initialization WITHOUT batteries accomplished.
-Time Period = 1, macroItr = 6 and Area = 4:  Oh no! x0_NoLoss(178) > ub(178) as 0.003095 > 0.003095.
-Time Period = 1, macroItr = 6 and Area = 4:  Oh no! x0_NoLoss(179) > ub(179) as 0.003095 > 0.003095.
-Time Period = 1, macroItr = 6 and Area = 4:  Oh no! x0_NoLoss(180) > ub(180) as 0.003095 > 0.003095.
-Time Period = 1, macroItr = 6 and Area = 4:  Oh no! x0_NoLoss(186) < lb(186) as -0.003095 < -0.003095.
-Time Period = 1, macroItr = 6 and Area = 4:  Oh no! x0_NoLoss(193) < lb(193) as -0.001548 < -0.001548.
-Time Period = 1, macroItr = 6 and Area = 4: x0_NoLoss within limits anyway? More like MATLAB stupid? Phase 1 of Initialization successful. Proceeding to Phase 2 of Initialization.
-Time Period = 1, macroItr = 6 and Area = 4: Performing Initialization Phase 2
-Time Period = 1, macroItr = 6 and Area = 4: Lossless Initialization WITH batteries accomplished.
+Time Period = 1, macroItr = 1 and Area = 2: Performing Initialization Phase 1.
+Time Period = 1, macroItr = 1 and Area = 2: Lossless Initialization WITHOUT batteries accomplished.
+Time Period = 1, macroItr = 1 and Area = 2: x0_NoLoss within limits. Phase 1 of Initialization successful. Proceeding to Phase 2 of Initialization.
+Time Period = 1, macroItr = 1 and Area = 2: Performing Initialization Phase 2
+Time Period = 1, macroItr = 1 and Area = 2: Lossless Initialization WITH batteries accomplished.
