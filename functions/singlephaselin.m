@@ -120,6 +120,8 @@ function x_NoLoss = singlephaselin(busDataTable_pu_Area, branchDataTable_Area, v
     elseif ~logging
         logging = verbose;
         fid = 1;
+    else
+        fid = 1;
     end
 
     N_Area = length(busDataTable_pu_Area.bus);

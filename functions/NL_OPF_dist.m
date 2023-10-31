@@ -437,7 +437,7 @@ function [x, B0Vals_pu_Area, ...
 
 
     x_NoLoss = singlephaselin(busDataTable_pu_Area, branchDataTable_Area, v_parent_Area, S_connection_Area, B0Vals_pu_Area, isLeaf_Area, ...
-        Area, numAreas, graphDFS_Area_Table, R_Area_Matrix, X_Area_Matrix, t, macroItr, lambdaVals, pvCoeffVals, 'verbose', false, 'logging', true);
+        Area, numAreas, graphDFS_Area_Table, R_Area_Matrix, X_Area_Matrix, t, macroItr, lambdaVals, pvCoeffVals, 'verbose', false, 'logging', false);
 
 
     numVarsNoLoss = [m_Area, m_Area, N_Area, nDER_Area, nBatt_Area, nBatt_Area, nBatt_Area, nBatt_Area];
@@ -478,8 +478,9 @@ function [x, B0Vals_pu_Area, ...
     lb_AreaFull = [lb_Area; lb_qD_onlyDERbuses_Area; lb_B_onlyBattBuses_Area; lb_Pc_onlyBattBuses_Area; lb_Pd_onlyBattBuses_Area; lb_qB_onlyBattBuses_Area];
     ub_AreaFull = [ub_Area; ub_qD_onlyDERbuses_Area; ub_B_onlyBattBuses_Area; ub_Pc_onlyBattBuses_Area; ub_Pd_onlyBattBuses_Area; ub_qB_onlyBattBuses_Area];
     
-    printIterations = "iter-detailed";
-    options = optimoptions('fmincon', 'Display', printIterations, 'MaxFunctionEvaluations', 100000000, 'Algorithm', 'sqp');
+    % displayIterations = "iter-detailed";
+    displayIterations = "off";
+    options = optimoptions('fmincon', 'Display', displayIterations, 'MaxFunctionEvaluations', 100000000, 'Algorithm', 'sqp');
     
     t3Start = tic;
     
